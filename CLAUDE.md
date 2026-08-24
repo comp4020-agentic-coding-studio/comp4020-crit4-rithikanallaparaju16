@@ -58,6 +58,15 @@ Conventions this code has to hold to:
 - **Tilt is always relative to a captured baseline**, never the raw angle ---
   people hold phones at whatever angle they like --- and always heavily
   smoothed before it reaches an AudioParam.
+- **A note fires on *entering* a key, never on staying in one.** A cooldown is
+  not enough on its own: a finger resting on a key still jitters, and any
+  wobble spaced wider than the cooldown re-fires it. Holding one key gave 29
+  notes in three seconds before this was tracked per pointer. Keep the
+  cooldown as well, for a fast wobble across a boundary.
+- **Held notes need a release, and a release needs a token.** Bass sustains
+  while held, so whatever starts a note has to be able to end it --- and
+  because bass is monophonic, a stale finger must not be able to cut the note
+  that replaced it. Releases carry the token of the voice they started.
 - **Play now, quantise the repeat.** A tap fires immediately; only its loop
   repeat is snapped to the grid. Never quantise the live note: latency is the
   thing the crit tests by feel.

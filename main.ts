@@ -22,11 +22,15 @@ import { TiltController } from "./src/tilt.ts";
 
 const bassVoice = new BassVoice(ctx, buses);
 
-function voice(band: Hit["band"], freq: number, gain: number, when: number): void {
+/** Scheduled playback, for the loop -- envelopes that end by themselves. */
+function replayVoice(band: Hit["band"], freq: number, gain: number, when: number): void {
   if (band === "bells") playBell(ctx, buses, freq, gain, when);
   else if (band === "marimba") playMarimba(ctx, buses, freq, gain, when);
-  else bassVoice.trigger(freq, gain, when);
+  else bassVoice.replay(freq, gain, when);
 }
+
+// Bass is monophonic, so one token tracks whichever press currently owns it.
+let bassToken: number | null = null;
 
 // Everything you play goes into the loop and stays there until the page is
 // refreshed, so you can lay a bass note down, play marimba over the top of it
@@ -34,7 +38,7 @@ function voice(band: Hit["band"], freq: number, gain: number, when: number): voi
 const looper = new Looper(
   ctx,
   (band, column, gain, when) => {
-    voice(band, frequencyForColumn(band, column), gain, when);
+    replayVoice(band, frequencyForColumn(band, column), gain, when);
     window.setTimeout(
       () => pulseColumn(band, column, "echo"),
       Math.max(0, (when - ctx.currentTime) * 1000),
@@ -103,10 +107,24 @@ if (instrument) {
     },
 
     onNote(hit: Hit) {
-      voice(hit.band, frequencyForColumn(hit.band, hit.column), 1, ctx.currentTime);
+      const freq = frequencyForColumn(hit.band, hit.column);
+      if (hit.band === "bells") playBell(ctx, buses, freq);
+      else if (hit.band === "marimba") playMarimba(ctx, buses, freq);
+      // Bass holds while you hold it, so it needs a press, not a one-shot.
+      else bassToken = bassVoice.press(freq);
+
       pulseColumn(hit.band, hit.column, "live");
       looper.record(hit.band, hit.column);
       announce(`${noteName(hit.band, hit.column)}. ${looper.size} looping.`);
+    },
+
+    onRelease(hit: Hit) {
+      // Only the bass sustains; the struck voices ring out on their own.
+      // Letting go starts its ~7s tail, so sliding off it onto the marimba
+      // leaves the drone behind you rather than cutting it dead.
+      if (hit.band !== "bass" || bassToken === null) return;
+      bassVoice.release(bassToken);
+      bassToken = null;
     },
   });
 }

@@ -7,7 +7,10 @@ export interface Hit {
 }
 
 export interface InteractionHandlers {
+  /** A note starts. */
   onNote(hit: Hit): void;
+  /** The finger, mouse or key holding that note let go of it. */
+  onRelease(hit: Hit): void;
   /** Fired exactly once, synchronously, inside the very first gesture. */
   onFirstGesture(): void;
 }
@@ -27,6 +30,8 @@ const KEY_MAP = new Map<string, Hit>();
 for (const [band, row] of KEY_ROWS) {
   [...row].forEach((character, column) => KEY_MAP.set(character, { band, column }));
 }
+
+const same = (a: Hit, b: Hit): boolean => a.band === b.band && a.column === b.column;
 
 export function setupInteraction(root: HTMLElement, handlers: InteractionHandlers): void {
   let bandRects = getBandRects();
@@ -49,61 +54,113 @@ export function setupInteraction(root: HTMLElement, handlers: InteractionHandler
     handlers.onFirstGesture();
   };
 
-  const maybeFire = (hit: Hit) => {
+  // Guards a fast wobble across a key boundary from machine-gunning. Holding
+  // still can't reach here at all: a note only fires on entering a new key.
+  const maybeFire = (hit: Hit): boolean => {
     const now = performance.now();
     const last = lastFired[hit.band];
-    if (last && last.column === hit.column && now - last.time < COOLDOWN_MS) return;
+    if (last && last.column === hit.column && now - last.time < COOLDOWN_MS) return false;
     lastFired[hit.band] = { column: hit.column, time: now };
     handlers.onNote(hit);
+    return true;
   };
 
-  const activePointers = new Map<number, Band>();
+  /** What each pointer is currently holding down. */
+  const held = new Map<number, Hit>();
+
+  const moveTo = (pointerId: number, hit: Hit | null) => {
+    const previous = held.get(pointerId);
+    // Still on the same key: nothing happens. This is what makes a long press
+    // one long note rather than a stutter of retriggers.
+    if (previous && hit && same(previous, hit)) return;
+
+    if (previous) handlers.onRelease(previous);
+    if (!hit) {
+      held.delete(pointerId);
+      return;
+    }
+    held.set(pointerId, hit);
+    if (!maybeFire(hit)) held.delete(pointerId);
+  };
 
   root.addEventListener("pointerdown", (event) => {
-    // (1) iOS permission + AudioContext.resume() must happen synchronously,
-    // before any of this handler's own async work -- and this same gesture
-    // still has to play the note it landed on, below.
+    // The iOS motion permission and the AudioContext resume have to happen
+    // synchronously here, before anything awaits -- and this same gesture
+    // still has to sound the note it landed on, below.
     ensureFirstGesture();
 
     const hit = hitTest(event.clientX, event.clientY, bandRects);
     if (!hit) return;
     root.setPointerCapture(event.pointerId);
-    activePointers.set(event.pointerId, hit.band);
-    maybeFire(hit);
+    moveTo(event.pointerId, hit);
   });
 
   root.addEventListener("pointermove", (event) => {
-    if (!activePointers.has(event.pointerId)) return;
-    const hit = hitTest(event.clientX, event.clientY, bandRects);
-    if (hit) maybeFire(hit);
+    if (!held.has(event.pointerId)) return;
+    moveTo(event.pointerId, hitTest(event.clientX, event.clientY, bandRects));
   });
 
-  const releasePointer = (event: PointerEvent) => activePointers.delete(event.pointerId);
-  root.addEventListener("pointerup", releasePointer);
-  root.addEventListener("pointercancel", releasePointer);
+  const lift = (event: PointerEvent) => {
+    const hit = held.get(event.pointerId);
+    if (!hit) return;
+    held.delete(event.pointerId);
+    handlers.onRelease(hit);
+  };
+  root.addEventListener("pointerup", lift);
+  root.addEventListener("pointercancel", lift);
+
+  /** Which keyboard keys are down, so a held key sustains and repeats once. */
+  const heldKeys = new Map<string, Hit>();
+
+  const pressKey = (key: string, hit: Hit) => {
+    if (heldKeys.has(key)) return;
+    heldKeys.set(key, hit);
+    if (!maybeFire(hit)) heldKeys.delete(key);
+  };
+
+  const releaseKey = (key: string) => {
+    const hit = heldKeys.get(key);
+    if (!hit) return;
+    heldKeys.delete(key);
+    handlers.onRelease(hit);
+  };
 
   // Enter/Space plays whichever key has focus, so tabbing through works.
   root.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
-    const column = (event.target as HTMLElement | null)?.closest<HTMLElement>(".column");
-    if (!column) return;
+    const element = (event.target as HTMLElement | null)?.closest<HTMLElement>(".column");
+    if (!element) return;
     event.preventDefault();
     ensureFirstGesture();
-    const band = column.dataset.band as Band | undefined;
-    const columnIndex = Number(column.dataset.column);
-    if (band && BANDS.includes(band) && Number.isInteger(columnIndex)) {
-      maybeFire({ band, column: columnIndex });
+    const band = element.dataset.band as Band | undefined;
+    const column = Number(element.dataset.column);
+    if (band && BANDS.includes(band) && Number.isInteger(column)) {
+      pressKey(event.key, { band, column });
     }
+  });
+  root.addEventListener("keyup", (event) => {
+    if (event.key === "Enter" || event.key === " ") releaseKey(event.key);
   });
 
   // The tracker rows play from anywhere, without hunting for focus first.
   window.addEventListener("keydown", (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
-    const hit = KEY_MAP.get(event.key.toLowerCase());
+    const key = event.key.toLowerCase();
+    const hit = KEY_MAP.get(key);
     if (!hit) return;
     event.preventDefault();
     ensureFirstGesture();
-    maybeFire(hit);
+    pressKey(key, hit);
+  });
+  window.addEventListener("keyup", (event) => releaseKey(event.key.toLowerCase()));
+
+  // A pointer or key can be lost when the page goes away; don't leave a drone on.
+  window.addEventListener("blur", () => {
+    for (const [pointerId, hit] of held) {
+      held.delete(pointerId);
+      handlers.onRelease(hit);
+    }
+    for (const key of [...heldKeys.keys()]) releaseKey(key);
   });
 }
 
