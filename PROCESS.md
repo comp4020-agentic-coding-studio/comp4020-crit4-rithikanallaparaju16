@@ -2,33 +2,43 @@
 
 ## What I built
 
-An instrument in three horizontal bands — bells over marimba over bass, high
-sounds up high — eight keys each, tuned to A minor pentatonic across three
-octaves so a stranger cannot play a wrong note. Everything you play loops until
-you refresh: drop a bass note, play marimba over it, keep stacking. On a phone,
-tilting shapes the bass filter and rolls the reverb open.
+Three bands on one screen: bells on top, marimba in the middle, bass along the
+bottom, eight keys each. High notes sit up high and low notes down low, so the
+layout shows what it does without telling you. Every key is in A minor
+pentatonic, so nothing you play can sound wrong. What you play repeats until
+you refresh, so you can put a bass note down, play marimba over it, and keep
+adding. Tilting a phone changes the bass tone.
 
 ## The moments that mattered
 
-**The loop that faded.** My first pass at "keep playing" was an echo that
-decayed over about four cycles. It sounded good and was wrong — notes vanished
-after twenty seconds, so there was never anything to build on and layering
-never actually happened. The obvious fix was a longer decay. Instead I removed
-decay entirely, held the loop until refresh, and ducked looped notes under live
-ones so you can always hear yourself over the bed
-([`cb2cad0`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-rithikanallaparaju16/commit/cb2cad0)).
-I checked it by driving the page for twenty-six seconds: the first two notes
-had repeated five times, and bells added at thirteen seconds fired alongside
-them in the final cycle. Then I put *the loop never decays* in `CLAUDE.md`
-([`5cb982e`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-rithikanallaparaju16/commit/5cb982e))
-so it cannot come back.
+### The loop that faded
 
-**Tests that cannot hear.** `spec/` parses the built HTML with jsdom, which
-never runs scripts and has no Web Audio — so nothing generated in TypeScript
-was checkable, and none of the sound was. Rather than test around that, I moved
-the instrument's structure into static markup and asserted that the note
-printed on each key equals what `scale.ts` computes for it, so a label can
-never drift from the pitch it plays
+> I'm still not able to layer it, i wanna play sumn, and it has to keep
+> repeating until i refresh, and then i should be able to add more layers on it
+> until then
+
+I had made each repeat quieter than the last, so notes died after about twenty
+seconds. That broke the whole idea: your first note was gone before you could
+add anything on top of it. The easy fix was a longer fade. I removed the fade
+completely instead, so the loop runs until you refresh, and made repeats
+quieter than live notes so you can always hear yourself playing over the top
+([`cb2cad0`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-rithikanallaparaju16/commit/cb2cad0)).
+
+To check it, I played two notes, added two more thirteen seconds later, and
+watched for twenty-six. The first pair had repeated five times and all four
+played together at the end. Then I wrote *the loop never decays* into
+`CLAUDE.md`
+([`5cb982e`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-rithikanallaparaju16/commit/5cb982e))
+so I would not undo it later.
+
+### Making it explain itself
+
+> It should also be accessible easily and user has to undertsand what is going
+> on
+
+I printed the note name on every key, so you can see the pitch climb from left
+to right. The risk is a label saying one thing while the sound plays another,
+so a test checks every printed name against the note the audio code works out
+for that key — they cannot disagree without the build going red. I also gave
+the keyboard three rows matching the three bands, so it plays without a mouse
 ([`bc39a52`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit4-rithikanallaparaju16/commit/bc39a52)).
-Envelope shape and voice-stealing stay untested on purpose. That is what the
-crit is for.
