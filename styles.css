@@ -1,16 +1,553 @@
-body {
-  margin: 0;
-  padding: 2rem;
-  font-family: system-ui, sans-serif;
-  line-height: 1.6;
-  color: #1a1a1a;
+:root {
+  --surface: #131313;
+  --surface-container-lowest: #0e0e0e;
+  --surface-container-low: #1c1b1b;
+  --on-surface: #e5e2e1;
+
+  --bells-tint: #c4c4e0;
+  --bells-tint-dim: #44455c;
+  --marimba-tint: #ffb4a4;
+  --marimba-tint-dim: #c84b31;
+  --bass-tint: #a78a84;
+
+  --key-gutter: 2px;
+
+  /* Materials, generated in the stylesheet rather than fetched -- same
+     reasoning as the reverb impulse: no asset to host, no request. Turbulence
+     stretched along the key's length gives grain that runs like real wood or
+     brushed metal, without the corduroy regularity of a repeating gradient. */
+  --wood: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='240'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.006' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='240' filter='url(%23w)' opacity='0.3'/%3E%3C/svg%3E");
+  --brushed: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.015' numOctaves='3' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23b)' opacity='0.2'/%3E%3C/svg%3E");
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
 }
 
-main {
-  max-width: 40rem;
-  margin: 0 auto;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: Inter, system-ui, sans-serif;
+  overscroll-behavior: none;
 }
 
 a {
-  color: #0b5fff;
+  color: inherit;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+#instrument {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  touch-action: none;
+  user-select: none;
+  position: relative;
+  background: var(--surface-container-lowest);
+}
+
+/* ---- bands ---- */
+
+.band {
+  flex: 1 1 0;
+  display: flex;
+  gap: var(--key-gutter);
+  padding: var(--key-gutter);
+  min-height: 5.5rem;
+  position: relative;
+  isolation: isolate;
+}
+
+.band[data-band-container="marimba"] {
+  flex-grow: 2; /* the fat middle -- the voice played over the drone and under the bells */
+}
+
+/* Lit from above and sunk at the edges, so each band reads as a surface with
+   depth rather than a flat block of colour. */
+.band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 42%, rgba(0, 0, 0, 0.32)),
+    var(--band-material);
+  box-shadow:
+    inset 0 0 90px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.band[data-band-container="bells"] {
+  --band-material: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(196, 196, 224, 0.09) 42%,
+    transparent 62%
+  );
+  background: color-mix(in srgb, var(--bells-tint-dim) 55%, var(--surface));
+}
+
+.band[data-band-container="marimba"] {
+  --band-material: none;
+  background: color-mix(in srgb, var(--marimba-tint-dim) 40%, var(--surface));
+}
+
+.band[data-band-container="bass"] {
+  --band-material: radial-gradient(
+    120% 90% at 50% 0%,
+    rgba(167, 138, 132, 0.12),
+    transparent 70%
+  );
+  background: var(--surface-container-lowest);
+}
+
+/* ---- instrument names ---- */
+
+.band-label {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.85rem;
+  display: flex;
+  gap: 0.6rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  line-height: 13px;
+  text-transform: uppercase;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+.band-range {
+  opacity: 0.6;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+[data-band-container="bells"] .band-label {
+  color: var(--bells-tint);
+}
+
+[data-band-container="marimba"] .band-label {
+  color: var(--marimba-tint);
+}
+
+[data-band-container="bass"] .band-label {
+  color: var(--bass-tint);
+}
+
+/* ---- keys ---- */
+
+.column {
+  flex: 1 1 12.5%;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-container-low);
+  background-image: var(--key-texture, var(--grain));
+  background-size: var(--key-texture-size, 140px 140px);
+  background-blend-mode: overlay;
+  /* carved out of the band, per the sunken-surface treatment */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 22px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 120ms ease,
+    box-shadow 130ms ease,
+    background-color 130ms ease;
+}
+
+/* brushed metal for the bells */
+[data-band-container="bells"] .column {
+  --key-texture: var(--brushed);
+  --key-texture-size: 120px 120px;
+  background-color: color-mix(in srgb, var(--bells-tint) 13%, var(--surface-container-low));
+}
+
+/* wood for the marimba bars, grain running their length */
+[data-band-container="marimba"] .column {
+  --key-texture: var(--wood);
+  --key-texture-size: 120px 240px;
+  background-color: color-mix(in srgb, var(--marimba-tint) 12%, var(--surface-container-low));
+}
+
+[data-band-container="bass"] .column {
+  --key-texture: var(--grain);
+  --key-texture-size: 140px 140px;
+  background-color: color-mix(in srgb, var(--bass-tint) 11%, var(--surface-container-low));
+}
+
+/* The note each key plays. Reading left to right shows the scale climbing,
+   which is the one thing position alone can't tell you. */
+.note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.55rem;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  opacity: 0.55;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Keyboard players need to see where they are; the glow alone is transient. */
+.column:focus-visible {
+  outline: 2px solid var(--on-surface);
+  outline-offset: -4px;
+  z-index: 2;
+}
+
+/* ---- struck ---- */
+
+.column.is-active {
+  transform: scale(0.965);
+}
+
+[data-band-container="bells"] .column.is-active {
+  box-shadow:
+    inset 0 0 26px 7px var(--bells-tint),
+    0 0 22px -2px color-mix(in srgb, var(--bells-tint) 55%, transparent);
+  background-color: color-mix(in srgb, var(--bells-tint) 30%, var(--surface-container-low));
+}
+
+[data-band-container="marimba"] .column.is-active {
+  box-shadow:
+    inset 0 0 26px 7px var(--marimba-tint),
+    0 0 22px -2px color-mix(in srgb, var(--marimba-tint) 55%, transparent);
+  background-color: color-mix(in srgb, var(--marimba-tint) 30%, var(--surface-container-low));
+}
+
+[data-band-container="bass"] .column.is-active {
+  box-shadow:
+    inset 0 0 26px 7px var(--on-surface),
+    0 0 22px -2px color-mix(in srgb, var(--bass-tint) 55%, transparent);
+  background-color: color-mix(in srgb, var(--bass-tint) 28%, var(--surface-container-low));
+}
+
+/* the loop playing your pattern back -- dimmer than your own touch */
+.column.is-echo {
+  transition:
+    box-shadow 280ms ease,
+    background-color 280ms ease;
+}
+
+[data-band-container="bells"] .column.is-echo {
+  box-shadow: inset 0 0 18px 3px color-mix(in srgb, var(--bells-tint) 50%, transparent);
+}
+
+[data-band-container="marimba"] .column.is-echo {
+  box-shadow: inset 0 0 18px 3px color-mix(in srgb, var(--marimba-tint) 50%, transparent);
+}
+
+[data-band-container="bass"] .column.is-echo {
+  box-shadow: inset 0 0 18px 3px color-mix(in srgb, var(--bass-tint) 50%, transparent);
+}
+
+/* ---- what you've committed to the loop ---- */
+
+/* Centred so it clears the band label above and the tilt hint / attitude
+   indicator below. */
+.column.is-armed::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: armed-in 240ms ease;
+}
+
+[data-band-container="bells"] .column.is-armed::after {
+  background: var(--bells-tint);
+  box-shadow: 0 0 9px 1px color-mix(in srgb, var(--bells-tint) 60%, transparent);
+}
+
+[data-band-container="marimba"] .column.is-armed::after {
+  background: var(--marimba-tint);
+  box-shadow: 0 0 9px 1px color-mix(in srgb, var(--marimba-tint) 60%, transparent);
+}
+
+[data-band-container="bass"] .column.is-armed::after {
+  background: var(--bass-tint);
+  box-shadow: 0 0 9px 1px color-mix(in srgb, var(--bass-tint) 60%, transparent);
+}
+
+@keyframes armed-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+/* ---- attitude indicator (pitch + roll) ---- */
+
+/* Top-right of the bass band, clear of the note names along the bottom. */
+.bass-readout {
+  position: absolute;
+  top: 0.4rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.attitude {
+  width: 7rem;
+  height: 2.4rem;
+  overflow: visible;
+}
+
+.attitude line {
+  stroke: var(--on-surface);
+  stroke-linecap: round;
+}
+
+.attitude-horizon {
+  stroke-width: 1.6;
+  opacity: 0.8;
+}
+
+.attitude-grade {
+  stroke-width: 1;
+  opacity: 0.32;
+}
+
+.attitude-ref {
+  fill: var(--marimba-tint);
+  opacity: 0.9;
+}
+
+/* ---- loop pulse ---- */
+
+.pulse-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  pointer-events: none;
+}
+
+.pulse-bar.is-running {
+  opacity: 1;
+}
+
+.pulse-fill {
+  height: 100%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--marimba-tint) 75%, transparent));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--marimba-tint) 40%, transparent);
+}
+
+/* ---- misc ---- */
+
+.tilt-hint {
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* ---- intro layer ---- */
+
+/* Never blocks the instrument -- the first tap passes straight through to a
+   note and dismisses this on the way. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  pointer-events: none;
+  /* Dark enough to read against, light enough that the three bands stay
+     visible -- you should see what you're being invited to touch. */
+  background:
+    radial-gradient(40rem 24rem at 50% 50%, rgba(6, 6, 6, 0.94), rgba(6, 6, 6, 0.62) 62%, transparent),
+    rgba(6, 6, 6, 0.5);
+  backdrop-filter: blur(2px);
+  transition:
+    opacity 500ms ease,
+    visibility 500ms;
+}
+
+.intro.is-dismissed {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.intro-card {
+  max-width: 30rem;
+  text-align: center;
+  animation: intro-rise 700ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.intro-lede {
+  margin: 0 0 1.6rem;
+  font-size: clamp(1.15rem, 4.5vw, 1.6rem);
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  color: var(--on-surface);
+}
+
+.intro-facts {
+  margin: 0 0 1.6rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.intro-facts li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.intro-facts b {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--marimba-tint);
+}
+
+.intro-facts span {
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--on-surface) 72%, transparent);
+}
+
+.intro-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.1rem;
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--on-surface) 55%, transparent);
+}
+
+/* Offer the control that's actually to hand. This only picks the wording --
+   whether tilt really works is still settled by waiting for a live reading. */
+.intro-touch {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .intro-keys {
+    display: none;
+  }
+
+  .intro-touch {
+    display: flex;
+  }
+}
+
+.intro-meta kbd {
+  font: inherit;
+  padding: 0.1rem 0.32rem;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--on-surface) 22%, transparent);
+  color: color-mix(in srgb, var(--on-surface) 78%, transparent);
+}
+
+@keyframes intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* ---- help ---- */
+
+.help {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.85rem;
+  z-index: 7;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--on-surface) 22%, transparent);
+  background: rgba(14, 14, 14, 0.72);
+  color: color-mix(in srgb, var(--on-surface) 65%, transparent);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.help:hover,
+.help:focus-visible {
+  color: var(--on-surface);
+  border-color: color-mix(in srgb, var(--on-surface) 55%, transparent);
+  background: rgba(20, 20, 20, 0.9);
+}
+
+.help:focus-visible {
+  outline: 2px solid var(--on-surface);
+  outline-offset: 2px;
+}
+
+body.is-cleared #instrument::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--on-surface);
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 5;
+  animation: fade-out 420ms ease forwards;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column,
+  .pulse-bar,
+  .column.is-armed::after,
+  .intro,
+  .intro-card {
+    transition-duration: 1ms;
+    animation: none;
+  }
 }

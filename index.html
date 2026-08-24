@@ -3,35 +3,106 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>COMP4020 prototype</title>
+    <title>Bells, Marimba, Bass</title>
     <meta
       name="description"
-      content="Replace this with one sentence saying what this page is. A search result and a link preview both show it."
+      content="A browser instrument: bells, marimba and a bass drone across three playable bands, tuned to A minor pentatonic. Everything you play loops, so you can keep layering."
     />
 
-    <!--
-      The link-preview card: public/card.png, 1200x630 --- replace it. The URL
-      resolves against this page, like any link. No og:title/og:description:
-      scrapers fall back to the <title> and description above.
-    -->
     <meta property="og:type" content="website" />
     <meta property="og:image" content="./card.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header>
-      <nav aria-label="Primary">
+      <nav class="visually-hidden" aria-label="Primary">
         <a href="./">Home</a>
       </nav>
     </header>
     <main>
-      <h1>COMP4020 prototype</h1>
-      <p data-testid="intro">
-        Replace this with your prototype. This week's brief is on the course website;
-        <code>spec/README.md</code> explains how the checks in this repo relate to it.
-      </p>
+      <h1 class="visually-hidden">Bells, marimba and bass drone in A minor pentatonic</h1>
+
+      <div id="instrument">
+        <div class="pulse-bar" data-testid="loop-pulse" aria-hidden="true">
+          <div class="pulse-fill"></div>
+        </div>
+
+        <div class="band" data-band-container="bells">
+          <span class="band-label" aria-hidden="true">Bells<span class="band-range">A5–D7</span></span>
+          <div class="column" data-band="bells" data-column="0" role="button" tabindex="0" aria-label="Bells A5" aria-keyshortcuts="1"><span class="note" aria-hidden="true">A5</span></div>
+          <div class="column" data-band="bells" data-column="1" role="button" tabindex="0" aria-label="Bells C6" aria-keyshortcuts="2"><span class="note" aria-hidden="true">C6</span></div>
+          <div class="column" data-band="bells" data-column="2" role="button" tabindex="0" aria-label="Bells D6" aria-keyshortcuts="3"><span class="note" aria-hidden="true">D6</span></div>
+          <div class="column" data-band="bells" data-column="3" role="button" tabindex="0" aria-label="Bells E6" aria-keyshortcuts="4"><span class="note" aria-hidden="true">E6</span></div>
+          <div class="column" data-band="bells" data-column="4" role="button" tabindex="0" aria-label="Bells G6" aria-keyshortcuts="5"><span class="note" aria-hidden="true">G6</span></div>
+          <div class="column" data-band="bells" data-column="5" role="button" tabindex="0" aria-label="Bells A6" aria-keyshortcuts="6"><span class="note" aria-hidden="true">A6</span></div>
+          <div class="column" data-band="bells" data-column="6" role="button" tabindex="0" aria-label="Bells C7" aria-keyshortcuts="7"><span class="note" aria-hidden="true">C7</span></div>
+          <div class="column" data-band="bells" data-column="7" role="button" tabindex="0" aria-label="Bells D7" aria-keyshortcuts="8"><span class="note" aria-hidden="true">D7</span></div>
+        </div>
+
+        <div class="band" data-band-container="marimba">
+          <span class="band-label" aria-hidden="true">Marimba<span class="band-range">A3–D5</span></span>
+          <div class="column" data-band="marimba" data-column="0" role="button" tabindex="0" aria-label="Marimba A3" aria-keyshortcuts="q"><span class="note" aria-hidden="true">A3</span></div>
+          <div class="column" data-band="marimba" data-column="1" role="button" tabindex="0" aria-label="Marimba C4" aria-keyshortcuts="w"><span class="note" aria-hidden="true">C4</span></div>
+          <div class="column" data-band="marimba" data-column="2" role="button" tabindex="0" aria-label="Marimba D4" aria-keyshortcuts="e"><span class="note" aria-hidden="true">D4</span></div>
+          <div class="column" data-band="marimba" data-column="3" role="button" tabindex="0" aria-label="Marimba E4" aria-keyshortcuts="r"><span class="note" aria-hidden="true">E4</span></div>
+          <div class="column" data-band="marimba" data-column="4" role="button" tabindex="0" aria-label="Marimba G4" aria-keyshortcuts="t"><span class="note" aria-hidden="true">G4</span></div>
+          <div class="column" data-band="marimba" data-column="5" role="button" tabindex="0" aria-label="Marimba A4" aria-keyshortcuts="y"><span class="note" aria-hidden="true">A4</span></div>
+          <div class="column" data-band="marimba" data-column="6" role="button" tabindex="0" aria-label="Marimba C5" aria-keyshortcuts="u"><span class="note" aria-hidden="true">C5</span></div>
+          <div class="column" data-band="marimba" data-column="7" role="button" tabindex="0" aria-label="Marimba D5" aria-keyshortcuts="i"><span class="note" aria-hidden="true">D5</span></div>
+        </div>
+
+        <div class="band" data-band-container="bass">
+          <span class="band-label" aria-hidden="true">Bass<span class="band-range">A1–D3</span></span>
+          <div class="column" data-band="bass" data-column="0" role="button" tabindex="0" aria-label="Bass A1" aria-keyshortcuts="a"><span class="note" aria-hidden="true">A1</span></div>
+          <div class="column" data-band="bass" data-column="1" role="button" tabindex="0" aria-label="Bass C2" aria-keyshortcuts="s"><span class="note" aria-hidden="true">C2</span></div>
+          <div class="column" data-band="bass" data-column="2" role="button" tabindex="0" aria-label="Bass D2" aria-keyshortcuts="d"><span class="note" aria-hidden="true">D2</span></div>
+          <div class="column" data-band="bass" data-column="3" role="button" tabindex="0" aria-label="Bass E2" aria-keyshortcuts="f"><span class="note" aria-hidden="true">E2</span></div>
+          <div class="column" data-band="bass" data-column="4" role="button" tabindex="0" aria-label="Bass G2" aria-keyshortcuts="g"><span class="note" aria-hidden="true">G2</span></div>
+          <div class="column" data-band="bass" data-column="5" role="button" tabindex="0" aria-label="Bass A2" aria-keyshortcuts="h"><span class="note" aria-hidden="true">A2</span></div>
+          <div class="column" data-band="bass" data-column="6" role="button" tabindex="0" aria-label="Bass C3" aria-keyshortcuts="j"><span class="note" aria-hidden="true">C3</span></div>
+          <div class="column" data-band="bass" data-column="7" role="button" tabindex="0" aria-label="Bass D3" aria-keyshortcuts="k"><span class="note" aria-hidden="true">D3</span></div>
+
+          <div class="bass-readout" aria-hidden="true">
+            <svg class="attitude" viewBox="0 0 100 40">
+              <g data-testid="horizon-line" transform="rotate(0 50 20) translate(0 0)">
+                <line class="attitude-horizon" x1="8" y1="20" x2="92" y2="20" />
+                <line class="attitude-grade" x1="34" y1="27" x2="66" y2="27" />
+                <line class="attitude-grade" x1="40" y1="13" x2="60" y2="13" />
+              </g>
+              <circle class="attitude-ref" cx="50" cy="20" r="1.6" />
+            </svg>
+            <p class="tilt-hint" data-testid="tilt-hint" hidden>open on a phone to tilt</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sits over the instrument but never blocks it: pointer-events are off,
+           so the first tap plays its note and dismisses this in one gesture. -->
+      <div class="intro" data-testid="intro-overlay">
+        <div class="intro-card">
+          <p class="intro-lede">Touch anywhere to play</p>
+          <ul class="intro-facts">
+            <li><b>Bells · Marimba · Bass</b><span>three voices, stacked high to low</span></li>
+            <li><b>Left to right</b><span>low to high — always in tune</span></li>
+            <li><b>Everything loops</b><span>keep playing to layer it up</span></li>
+          </ul>
+          <p class="intro-meta intro-keys">
+            <span>Keys <kbd>1</kbd>–<kbd>8</kbd> <kbd>Q</kbd>–<kbd>I</kbd> <kbd>A</kbd>–<kbd>K</kbd></span>
+            <span><kbd>Esc</kbd> clears</span>
+          </p>
+          <p class="intro-meta intro-touch">
+            <span>Tilt to shape the bass</span>
+            <span>Shake to clear</span>
+          </p>
+        </div>
+      </div>
+
+      <button class="help" type="button" data-testid="help" aria-label="How to play">?</button>
+
+      <p class="visually-hidden" role="status" aria-live="polite" data-testid="announcer"></p>
     </main>
     <script type="module" src="./main.ts"></script>
   </body>
