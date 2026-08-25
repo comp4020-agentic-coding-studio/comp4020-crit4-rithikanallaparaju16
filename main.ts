@@ -22,11 +22,19 @@ import { TiltController } from "./src/tilt.ts";
 
 const bassVoice = new BassVoice(ctx, buses);
 
-/** Scheduled playback, for the loop -- envelopes that end by themselves. */
-function replayVoice(band: Hit["band"], freq: number, gain: number, when: number): void {
-  if (band === "bells") playBell(ctx, buses, freq, gain, when);
-  else if (band === "marimba") playMarimba(ctx, buses, freq, gain, when);
-  else bassVoice.replay(freq, gain, when);
+/** Scheduled playback, for the loop -- envelopes that end by themselves.
+ *  Returns whether it actually sounded, since a held bass note can make its
+ *  own echo sit a repeat out. */
+function replayVoice(band: Hit["band"], freq: number, gain: number, when: number): boolean {
+  if (band === "bells") {
+    playBell(ctx, buses, freq, gain, when);
+    return true;
+  }
+  if (band === "marimba") {
+    playMarimba(ctx, buses, freq, gain, when);
+    return true;
+  }
+  return bassVoice.replay(freq, gain, when);
 }
 
 // Bass is monophonic, so one token tracks whichever press currently owns it.
@@ -38,7 +46,7 @@ let bassToken: number | null = null;
 const looper = new Looper(
   ctx,
   (band, column, gain, when) => {
-    replayVoice(band, frequencyForColumn(band, column), gain, when);
+    if (!replayVoice(band, frequencyForColumn(band, column), gain, when)) return;
     window.setTimeout(
       () => pulseColumn(band, column, "echo"),
       Math.max(0, (when - ctx.currentTime) * 1000),

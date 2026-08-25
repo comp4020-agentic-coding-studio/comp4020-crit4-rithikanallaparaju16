@@ -67,6 +67,13 @@ Conventions this code has to hold to:
   while held, so whatever starts a note has to be able to end it --- and
   because bass is monophonic, a stale finger must not be able to cut the note
   that replaced it. Releases carry the token of the voice they started.
+- **A live, held note always wins the mono bass slot over its own loop echo.**
+  The loop is 5s long, so a bass note held past one loop length comes back
+  around to its own step while the finger is still down. If that echo were
+  allowed to steal the slot the way a new press does, the held note got cut
+  over to a fixed 7s decay regardless of how long you kept holding --- the
+  finger looked ignored. The echo checks `releasing` and sits the repeat out
+  instead; `bornCycle` means it just tries again next time round.
 - **Play now, quantise the repeat.** A tap fires immediately; only its loop
   repeat is snapped to the grid. Never quantise the live note: latency is the
   thing the crit tests by feel.

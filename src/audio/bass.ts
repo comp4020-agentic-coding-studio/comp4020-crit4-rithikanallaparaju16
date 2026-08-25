@@ -61,8 +61,17 @@ export class BassVoice {
   }
 
   /** Loop playback: a fixed envelope that ends on its own, since a scheduled
-   *  note has no finger to let go of it. */
-  replay(freq: number, gain: number, when: number): void {
+   *  note has no finger to let go of it. A live, still-held press owns the
+   *  mono slot outright -- past one loop length its own echo comes due while
+   *  the finger is still down, and if that echo were allowed to steal the
+   *  slot the way a new press does, a long-held note would get cut over to a
+   *  fixed decay every ~5s regardless of the hold. So it just sits this
+   *  repeat out; `bornCycle` means it tries again next time round, and wins
+   *  as soon as the note is actually released. Returns whether it played, so
+   *  the caller can skip the echo pulse when it didn't. */
+  replay(freq: number, gain: number, when: number): boolean {
+    if (this.current && !this.current.releasing) return false;
+
     const start = Math.max(when, this.ctx.currentTime);
     const voice = this.begin(freq, start);
 
@@ -76,6 +85,7 @@ export class BassVoice {
     voice.oscB.stop(stopAt);
     this.token += 1; // a replayed note owns the voice; stale presses can't release it
     this.current = voice;
+    return true;
   }
 
   /** Called on every smoothed tilt update, whether or not a note is sounding. */
